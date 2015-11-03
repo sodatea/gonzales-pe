@@ -25,7 +25,6 @@ var contexts = {
   'atrule': function() { return checkAtrule(pos) && getAtrule(); },
   'block': function() { return checkBlock(pos) && getBlock(); },
   'brackets': function() { return checkBrackets(pos) && getBrackets(); },
-  'class': function() { return checkClass(pos) && getClass(); },
   'combinator': function() { return checkCombinator(pos) && getCombinator(); },
   'commentML': function() { return checkCommentML(pos) && getCommentML(); },
   'declaration': function() { return checkDeclaration(pos) && getDeclaration(); },

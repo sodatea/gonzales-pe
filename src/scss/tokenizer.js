@@ -3,87 +3,88 @@
 let Node = require('../node/basic-node');
 let NodeType = require('../node/node-types');
 
-module.exports = function(css, tabSize) {
-  let tokens = [];
-  let urlMode = false;
-  let blockMode = 0;
-  let c; // Current character
-  let cn; // Next character
-  let pos = 0;
-  let ln = 1;
-  let col = 1;
-  let cssLength = 0;
-  let syntax = 'scss';
+let Space = {
+  ' ': NodeType.SPACE,
+  '\n': NodeType.SPACE,
+  '\r': NodeType.SPACE,
+  '\t': NodeType.SPACE
+};
 
-  let Space = {
-    ' ': NodeType.SPACE,
-    '\n': NodeType.SPACE,
-    '\r': NodeType.SPACE,
-    '\t': NodeType.SPACE
-  };
+let Punctuation = {
+  '!': NodeType.EXCLAMATION_MARK,
+  '"': NodeType.QUOTATION_MARK,
+  '#': NodeType.NUMBER_SIGN,
+  '$': NodeType.DOLLAR_SIGN,
+  '%': NodeType.PERCENT_SIGN,
+  '&': NodeType.AMPERSAND,
+  '\'': NodeType.APOSTROPHE,
+  '(': NodeType.LEFT_PARENTHESIS,
+  ')': NodeType.RIGHT_PARENTHESIS,
+  '*': NodeType.ASTERISK,
+  '+': NodeType.PLUS_SIGN,
+  ',': NodeType.COMMA,
+  '-': NodeType.HYPHEN_MINUS,
+  '.': NodeType.FULL_STOP,
+  '/': NodeType.SOLIDUS,
+  ':': NodeType.COLON,
+  ';': NodeType.SEMICOLON,
+  '<': NodeType.LESS_THAN_SIGN,
+  '=': NodeType.EQUALS_SIGN,
+  '>': NodeType.GREATER_THAN_SIGN,
+  '?': NodeType.QUESTION_MARK,
+  '@': NodeType.COMMERCIAL_AT,
+  '[': NodeType.LEFT_SQUARE_BRACKET,
+  ']': NodeType.RIGHT_SQUARE_BRACKET,
+  '^': NodeType.CIRCUMFLEX_ACCENT,
+  '_': NodeType.LOW_LINE,
+  '{': NodeType.LEFT_CURLY_BRACKET,
+  '}': NodeType.RIGHT_CURLY_BRACKET,
+  '|': NodeType.VERTICAL_LINE,
+  '~': NodeType.TILDE
+};
 
-  let Punctuation = {
-    '!': NodeType.EXCLAMATION_MARK,
-    '"': NodeType.QUOTATION_MARK,
-    '#': NodeType.NUMBER_SIGN,
-    '$': NodeType.DOLLAR_SIGN,
-    '%': NodeType.PERCENT_SIGN,
-    '&': NodeType.AMPERSAND,
-    '\'': NodeType.APOSTROPHE,
-    '(': NodeType.LEFT_PARENTHESIS,
-    ')': NodeType.RIGHT_PARENTHESIS,
-    '*': NodeType.ASTERISK,
-    '+': NodeType.PLUS_SIGN,
-    ',': NodeType.COMMA,
-    '-': NodeType.HYPHEN_MINUS,
-    '.': NodeType.FULL_STOP,
-    '/': NodeType.SOLIDUS,
-    ':': NodeType.COLON,
-    ';': NodeType.SEMICOLON,
-    '<': NodeType.LESS_THAN_SIGN,
-    '=': NodeType.EQUALS_SIGN,
-    '>': NodeType.GREATER_THAN_SIGN,
-    '?': NodeType.QUESTION_MARK,
-    '@': NodeType.COMMERCIAL_AT,
-    '[': NodeType.LEFT_SQUARE_BRACKET,
-    ']': NodeType.RIGHT_SQUARE_BRACKET,
-    '^': NodeType.CIRCUMFLEX_ACCENT,
-    '_': NodeType.LOW_LINE,
-    '{': NodeType.LEFT_CURLY_BRACKET,
-    '}': NodeType.RIGHT_CURLY_BRACKET,
-    '|': NodeType.VERTICAL_LINE,
-    '~': NodeType.TILDE
-  };
+let tokens = [];
+let urlMode = false;
+let blockMode = 0;
+let pos = 0;
+let tn = 0;
+let ln = 1;
+let col = 1;
+let cssLength = 0;
+let syntax = 'scss';
 
+function addNode(type, value, column, line = ln) {
+  let node = new Node({
+    type: type,
+    content: value,
+    syntax: syntax,
+    start: {
+      line: line,
+      column: column
+    },
+    // TODO: Calculate real end position.
+    end: {
+      line: ln,
+      column: col
+    }
+  });
 
-  function addNode(type, value, column, line = ln) {
-    let node = new Node({
-      type: type,
-      content: value,
-      syntax: syntax,
-      start: {
-        line: line,
-        column: column
-      },
-      // TODO: Calculate real end position.
-      end: {
-        line: ln,
-        column: col
-      }
-    });
+  tokens.push(node);
+}
 
-    tokens.push(node);
-  }
+function isDecimalDigit(c) {
+  return '0123456789'.indexOf(c) >= 0;
+}
 
-
-  /**
-   * Check if a character is a decimal digit
-   * @param {string} c Character
-   * @returns {boolean}
-   */
-  function isDecimalDigit(c) {
-    return '0123456789'.indexOf(c) >= 0;
-  }
+function buildPrimitiveNodes(css, tabSize) {
+  tokens = [];
+  urlMode = false;
+  blockMode = 0;
+  pos = 0;
+  tn = 0;
+  ln = 1;
+  col = 1;
+  cssLength = 0;
 
   /**
    * Parse spaces
@@ -234,6 +235,9 @@ module.exports = function(css, tabSize) {
    * @private
    */
   function getTokens(css) {
+    var c; // Current character
+    var cn; // Next character
+
     cssLength = css.length;
 
     // Parse string, character by character:
@@ -262,7 +266,7 @@ module.exports = function(css, tabSize) {
       }
 
       // If current character is a space:
-      else if (c === ' ') {
+      else if (Space[c]) {
         parseSpaces(css);
       }
 
@@ -270,13 +274,9 @@ module.exports = function(css, tabSize) {
       else if (c in Punctuation) {
         // Add it to the list of tokens:
         addNode(Punctuation[c], c, col);
-        if (c === '\n' || c === '\r') {
-          ln++;
-          col = 0;
-        } // Go to next line
         if (c === ')') urlMode = false; // Exit url mode
-        if (c === '{') blockMode++; // Enter a block
-        if (c === '}') blockMode--; // Exit a block
+        else if (c === '{') blockMode++; // Enter a block
+        else if (c === '}') blockMode--; // Exit a block
         else if (c === '\t' && tabSize > 1) col += (tabSize - 1);
       }
 
@@ -295,4 +295,6 @@ module.exports = function(css, tabSize) {
   }
 
   return getTokens(css);
-};
+}
+
+module.exports = buildPrimitiveNodes;
