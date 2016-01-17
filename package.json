@@ -20,16 +20,12 @@
     "build": "./scripts/build.sh",
     "init": "./scripts/init.sh",
     "log": "./scripts/log.sh",
-    "postinstall": "./scripts/postinstall.sh",
+    "postinstall": "ls . && ./scripts/postinstall.sh",
     "test": "./scripts/build.sh && ./scripts/test.sh"
   },
   "bin": {
     "gonzales": "./bin/gonzales.js"
   },
-  "files": [
-    "bin",
-    "lib"
-  ],
   "dependencies": {
     "minimist": "1.1.x"
   },
