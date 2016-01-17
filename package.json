@@ -20,6 +20,7 @@
     "build": "./scripts/build.sh",
     "init": "./scripts/init.sh",
     "log": "./scripts/log.sh",
+    "postinstall": "./scripts/postinstall.sh",
     "test": "./scripts/build.sh && ./scripts/test.sh"
   },
   "bin": {
